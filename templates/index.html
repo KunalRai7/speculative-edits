@@ -19,6 +19,14 @@
             border: 1px solid #ddd;
             white-space: pre-wrap;
         }
+        textarea {
+            width: 100%;
+            height: 200px;
+            margin: 10px 0;
+            font-family: monospace;
+            padding: 10px;
+            border: 1px solid #ddd;
+        }
         .results {
             display: flex;
             gap: 20px;
@@ -52,20 +60,61 @@
         }
         .controls {
             margin: 20px 0;
-            text-align: center;
+            padding: 20px;
+            background: #f8f8f8;
+            border-radius: 5px;
+        }
+        .prompt-section {
+            margin: 20px 0;
+        }
+        .checkbox-control {
+            margin: 10px 0;
+        }
+        .endpoint-selector {
+            margin-bottom: 20px;
+            padding: 10px;
+            background: #e9e9e9;
+            border-radius: 4px;
+        }
+        .endpoint-selector select {
+            padding: 5px;
+            margin-left: 10px;
         }
     </style>
 </head>
 <body>
     <h1>Speculative Edits Tester</h1>
     
-    <h2>README Example Prompt:</h2>
-    <div class="prompt" id="readme-prompt"></div>
+    <div class="endpoint-selector">
+        <label for="endpoint">Test against:</label>
+        <select id="endpoint">
+            <option value="local">Local (http://localhost:10000)</option>
+            <option value="hosted">Hosted (https://speculative-edits.onrender.com)</option>
+            <option value="production">Production (https://speculative-edits-production.up.railway.app)</option>
+        </select>
+    </div>
+    
+    <div class="prompt-section">
+        <h2>README Example Prompt:</h2>
+        <div class="prompt" id="readme-prompt"></div>
+        
+        <div class="checkbox-control">
+            <input type="checkbox" id="use-custom-prompt" onchange="togglePrompt()">
+            <label for="use-custom-prompt">Use custom prompt instead</label>
+        </div>
+        
+        <div id="custom-prompt-section" style="display: none;">
+            <h2>Custom Prompt:</h2>
+            <textarea id="custom-prompt" placeholder="Enter your custom prompt here..."></textarea>
+        </div>
+    </div>
     
     <div class="controls">
         <label for="max_tokens">Max Tokens:</label>
         <input type="number" id="max_tokens" value="1000">
         <button onclick="testBoth()">Test Both Methods</button>
+        <button onclick="testEdit('vanilla')">Test Vanilla Only</button>
+        <button onclick="testEdit('speculative')">Test Speculative Only</button>
     </div>
     
     <div class="results">
@@ -80,27 +129,46 @@
     </div>
 
     <script>
+        const ENDPOINTS = {
+            local: 'http://localhost:10000',
+            hosted: 'https://speculative-edits.onrender.com',
+            production: 'https://speculative-edits-production.up.railway.app'
+        };
+
         // Fetch and display README prompt when page loads
         fetch('/get_readme_prompt')
             .then(response => response.json())
             .then(data => {
                 document.getElementById('readme-prompt').textContent = data.prompt;
             });
+            
+        function togglePrompt() {
+            const useCustom = document.getElementById('use-custom-prompt').checked;
+            document.getElementById('custom-prompt-section').style.display = useCustom ? 'block' : 'none';
+        }
+
+        function getSelectedEndpoint() {
+            const endpoint = document.getElementById('endpoint').value;
+            return ENDPOINTS[endpoint];
+        }
 
         async function testEdit(method) {
             const maxTokens = parseInt(document.getElementById('max_tokens').value);
+            const useCustom = document.getElementById('use-custom-prompt').checked;
             const resultDiv = document.getElementById(`${method}-result`);
+            const endpoint = getSelectedEndpoint();
             
-            resultDiv.textContent = 'Processing...';
+            resultDiv.textContent = `Processing... (${endpoint})`;
             
             try {
-                const response = await fetch('/edit', {
+                const response = await fetch(`${endpoint}/edit`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
                         method: method,
+                        prompt: useCustom ? document.getElementById('custom-prompt').value : undefined,
                         max_tokens: maxTokens
                     })
                 });
