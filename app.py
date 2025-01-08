@@ -1,26 +1,22 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 from main import vanilla_edit, speculative_edit, get_readme_prompt
 
 app = Flask(__name__)
 
 @app.route('/')
 def home():
-    return '''
-    <h1>Speculative Edits API</h1>
-    <p>Use /edit endpoint with POST request to edit code.</p>
-    <p>Parameters:</p>
-    <ul>
-        <li>method: "vanilla" or "speculative"</li>
-        <li>prompt: (optional) custom prompt, or will use README example</li>
-        <li>max_tokens: (optional) maximum tokens to generate, default 1000</li>
-    </ul>
-    '''
+    return render_template('index.html')
+
+@app.route('/get_readme_prompt')
+def readme_prompt():
+    return jsonify({'prompt': get_readme_prompt()})
 
 @app.route('/edit', methods=['POST'])
 def edit():
     data = request.get_json()
     method = data.get('method', 'speculative')
-    prompt = data.get('prompt', get_readme_prompt())
+    # Always use README prompt as per requirements
+    prompt = get_readme_prompt()
     max_tokens = int(data.get('max_tokens', 1000))
     
     try:
