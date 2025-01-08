@@ -5,6 +5,10 @@ app = Flask(__name__)
 
 @app.route('/')
 def home():
+    # If request accepts HTML (browser), show the interface
+    if 'text/html' in request.accept_mimetypes:
+        return render_template('index.html')
+    # If API request, show API documentation
     return '''
     <h1>Speculative Edits API</h1>
     <p>Use /edit endpoint with POST request to edit code.</p>
@@ -15,6 +19,10 @@ def home():
         <li>max_tokens: (optional) maximum tokens to generate, default 1000</li>
     </ul>
     '''
+
+@app.route('/get_readme_prompt')
+def readme_prompt():
+    return jsonify({'prompt': get_readme_prompt()})
 
 @app.route('/edit', methods=['POST'])
 def edit():
